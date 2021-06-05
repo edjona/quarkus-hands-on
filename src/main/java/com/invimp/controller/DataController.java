@@ -39,7 +39,7 @@ public class DataController {
   @GET
   @Path("/withTimeout")
   @Produces(MediaType.APPLICATION_JSON)
-  @Timeout(value = 3000L)
+  @Timeout(value = 2000L)
   public Response getDataWithTimeout() throws InterruptedException {
     var tooLong = new Random().nextBoolean();
 
