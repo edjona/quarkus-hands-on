@@ -1,6 +1,8 @@
 package com.invimp.controller;
 
 import com.invimp.repository.DataRepository;
+import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
+import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.jboss.logging.Logger;
@@ -26,12 +28,7 @@ public class DataController {
   @Produces(MediaType.APPLICATION_JSON)
   @Retry(maxRetries = 5, delay = 1000L)
   public Response getDataWithRetry() {
-    var fail = new Random().nextBoolean();
-
-    if (fail) {
-      logger.warn("Attempt to connecting to database...");
-      throw new RuntimeException("Cannot connect to database");
-    }
+    simulateFailConnectToDatabase();
 
     return Response.ok(dataRepository.getData()).build();
   }
@@ -48,5 +45,36 @@ public class DataController {
     }
 
     return Response.ok(dataRepository.getData()).build();
+  }
+
+  @GET
+  @Path("/withFallback")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Fallback(fallbackMethod = "fallBackData")
+  public Response getDataWithFallback() {
+    simulateFailConnectToDatabase();
+
+    return Response.ok(dataRepository.getData()).build();
+  }
+
+  @GET
+  @Path("/withCircuitBreaker")
+  @Produces(MediaType.APPLICATION_JSON)
+  @CircuitBreaker(failureRatio = 0.3, requestVolumeThreshold = 5, failOn = RuntimeException.class, delay = 60000L)
+  public Response getDataWithCircuitBreaker() {
+    throw new RuntimeException("Cannot connect to database");
+  }
+
+  private void simulateFailConnectToDatabase() {
+    var fail = new Random().nextBoolean();
+
+    if (fail) {
+      logger.warn("Attempt to connecting to database...");
+      throw new RuntimeException("Cannot connect to database");
+    }
+  }
+
+  protected Response fallBackData() {
+    return Response.ok(dataRepository.getFallbackData()).build();
   }
 }
