@@ -2,6 +2,7 @@ package com.invimp.controller;
 
 import com.invimp.repository.DataRepository;
 import org.eclipse.microprofile.faulttolerance.Retry;
+import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.jboss.logging.Logger;
 
 import javax.inject.Inject;
@@ -24,12 +25,26 @@ public class DataController {
   @Path("/withRetry")
   @Produces(MediaType.APPLICATION_JSON)
   @Retry(maxRetries = 5, delay = 1000L)
-  public Response getData() {
+  public Response getDataWithRetry() {
     var fail = new Random().nextBoolean();
 
     if (fail) {
       logger.warn("Attempt to connecting to database...");
       throw new RuntimeException("Cannot connect to database");
+    }
+
+    return Response.ok(dataRepository.getData()).build();
+  }
+
+  @GET
+  @Path("/withTimeout")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Timeout(value = 3000L)
+  public Response getDataWithTimeout() throws InterruptedException {
+    var tooLong = new Random().nextBoolean();
+
+    if (tooLong) {
+      Thread.sleep(3000L);
     }
 
     return Response.ok(dataRepository.getData()).build();
